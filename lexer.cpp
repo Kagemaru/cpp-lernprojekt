@@ -2,6 +2,8 @@
 #include <string>
 #include <stack>
 #include <ctype.h>
+#include <assert.h>
+#include <iostream>
 
 using namespace std;
 
@@ -11,18 +13,19 @@ class Lexer{
     private:
         string  calc;
         string  stringValue;
-        int     pos=0;
+        int     pos;
         int     numberValue;
         Token   tok;
         
     public:
-                Lexer(string str)   { calc = str;               }
+                Lexer(string str)
+                    :pos(0), calc(str){}
         string  getStringValue()    { return stringValue;       }
         int     getNumberValue()    { return numberValue;       }
-        bool    hasNextToken()      { return (pos<calc.size);   }
+        bool    hasNextToken()      { return (pos<calc.size()); }
         Token   getToken()          { return tok;               }
         Token   moveToNextToken()   {
-            char ch = calc[pos];
+            char ch = calc[pos++];
             while (ch == ' ') { ch = calc[pos++]; }
             switch (ch){
                 case '+': tok = ADD;
@@ -35,7 +38,7 @@ class Lexer{
                 case ')': tok = R_PAR;
                 default:
                     if (isdigit(ch)) {
-                        int i = --pos;
+                        int i = pos - 1;
                         numberValue = 0;
                         while ((i<calc.size()) && (isdigit(calc[i]))){
                             numberValue = ((numberValue * 10) + calc[i++] - '0');
@@ -43,7 +46,7 @@ class Lexer{
                         pos = i;
                         tok = NUM;
                     } else if (isalpha(ch)) {
-                        int i = --pos;
+                        int i = pos - 1;
                         stringValue = "";
                         while ((i<calc.size()) && (isalpha(calc[i]))){
                             stringValue += calc[i++];
@@ -53,6 +56,7 @@ class Lexer{
             }
         }
 
+/*
         Token getNextToken(){
             char ch = calc[pos++];
             while (ch == ' ') { ch = calc[pos++]; }
@@ -83,69 +87,99 @@ class Lexer{
                         }
                         return VAR;
                     } else {
-                        if (--pos >= calc.size){
+                        if (--pos >= calc.size()){
                             return false;
                         }
                     }
             }
         }
-}
+*/
+};
 
 class Parser {
     private:
-        /*
-        expr  = NUM expr2
-              | VAR expr2
-              | PAR_L expr PAR_R
-        */
+        Lexer _lexer;
+        string calc;
+        void parseError(){ assert(false); }
+        bool accept(Token tok){ 
+            if (_lexer.getToken() == tok){
+                _lexer.moveToNextToken();
+                return true;
+            }
+            return false;
+        }
+        bool expect(Token tok){
+            if (!accept(tok)) { assert(false); }
+        }
         bool expr(){
-            Lexer::moveToNextToken();
-            if (tok = Lexer::getToken()){
-            
-            }
-            switch (tok){
-                case NUM:
-                    // Lexer::getNumberValue;
-                    return expr2();
-                case VAR:
-                    // Lexer::getStringValue;
-                    return expr2();
-                case PAR_L:
-                    if (expr2()){
-                        Lexer::moveToNextToken();
-                        tok = Lexer::getToken();
-                        return (tok == PAR_R);
-                    }
-                default: return true;
+            /*
+            expr  = NUM expr2
+                  | VAR expr2
+                  | L_PAR expr PAR_R
+            */
+            if (accept(NUM)) {
+                if (!expr2()) { parseError(); }
+                return true;
+            } else if (accept(VAR)) {
+                if (!expr2()) { parseError(); }
+                return true;
+            } else if (accept(L_PAR)) {
+                if (!expr2()) { parseError(); }
+                expect(R_PAR);
+                return true;
+            } else {
+                parseError();
             }
         }
-        /*
-        expr2 = ADD expr expr2
-              | SUB expr expr2
-              | MUL expr expr2
-              | DIV expr expr2
-              | epsilon
-        */
         bool expr2(){
-            
+            /*
+            expr2 = ADD expr expr2
+                  | SUB expr expr2
+                  | MUL expr expr2
+                  | DIV expr expr2
+                  | epsilon
+            */
+            if (accept(ADD)) {
+                if (!expr())  { parseError(); }
+                if (!expr2()) { parseError(); }
+                return true;
+            } else if (accept(SUB)) {
+                if (!expr())  { parseError(); }
+                if (!expr2()) { parseError(); }
+                return true;
+            } else if (accept(MUL)) {
+                if (!expr())  { parseError(); }
+                if (!expr2()) { parseError(); }
+                return true;
+            } else if (accept(DIV)) {
+                if (!expr())  { parseError(); }
+                if (!expr2()) { parseError(); }
+                return true;
+            } else {
+                return true;
+            }
         }
+
     public:
-}
+        Parser(string calc)
+            : _lexer(calc){
+                if (parse(calc)) { 
+                    cout << "give out calculated value" << endl;
+                } else {
+                    cout << "this should never be reached?" << endl;
+                }
+        }
+        bool parse(string calc){
+            _lexer.moveToNextToken();
+            return (expr());
+        }
+};
 
 int main(){
+    string calc;
     getline(cin, calc);
-    while (hasNextToken()){
-        switch(tok = getNextToken()) {
-            case ADD: cout << "ADD "; break;
-            case SUB: cout << "SUB "; break;
-            case MUL: cout << "MUL "; break;
-            case DIV: cout << "DIV "; break;
-            case NUM: cout << "NUM(" << getNumberValue() << ") "; break;
-            case VAR: cout << "VAR(" << getStringValue() << ") "; break;
-            case L_PAR: cout << "L_PAR "; break;
-            case R_PAR: cout << "R_PAR "; break;
-        }
-    }
+    Parser _parser(calc);
+
 /*
     getline(cin, calc);
     cout << "lexing \"" << calc << "\":" << endl;
