@@ -26,7 +26,6 @@ class Lexer{
         Token   getToken()          { return tok;               }
         void    moveToNextToken()   {
             char ch = calc[pos++];
-            cout << ch << " "; 
             while (ch == ' ') { ch = calc[pos++]; }
             switch (ch){
                 case '+': tok = ADD; break;
@@ -179,7 +178,12 @@ class Parser {
 int main(){
     string calc;
     getline(cin, calc);
-    //Parser _parser(calc);
+    Parser _parser(calc);
+
+
+
+
+/*
     Lexer _lexer(calc);
     Token tok;
     while (_lexer.hasNextToken()){
@@ -195,6 +199,7 @@ int main(){
             case R_PAR: cout << "R_PAR " << endl; break;
         }
     }
+*/
 /*
     getline(cin, calc);
     cout << "lexing \"" << calc << "\":" << endl;
@@ -211,4 +216,5 @@ int main(){
         }
     }
 */
+
 }
