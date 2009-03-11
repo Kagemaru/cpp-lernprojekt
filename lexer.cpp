@@ -24,18 +24,18 @@ class Lexer{
         int     getNumberValue()    { return numberValue;       }
         bool    hasNextToken()      { return (pos<calc.size()); }
         Token   getToken()          { return tok;               }
-        Token   moveToNextToken()   {
+        void    moveToNextToken()   {
             char ch = calc[pos++];
+            cout << ch << " "; 
             while (ch == ' ') { ch = calc[pos++]; }
             switch (ch){
-                case '+': tok = ADD;
-                case '-': tok = SUB;
-                case '*':
-                case 'x': tok = MUL;
+                case '+': tok = ADD; break;
+                case '-': tok = SUB; break;
+                case '*': tok = MUL; break;
                 case ':':
-                case '/': tok = DIV;
-                case '(': tok = L_PAR;
-                case ')': tok = R_PAR;
+                case '/': tok = DIV; break;
+                case '(': tok = L_PAR; break;
+                case ')': tok = R_PAR; break;
                 default:
                     if (isdigit(ch)) {
                         int i = pos - 1;
@@ -53,6 +53,7 @@ class Lexer{
                         }
                         tok = VAR;
                     }
+                    break;
             }
         }
 
@@ -178,8 +179,22 @@ class Parser {
 int main(){
     string calc;
     getline(cin, calc);
-    Parser _parser(calc);
-
+    //Parser _parser(calc);
+    Lexer _lexer(calc);
+    Token tok;
+    while (_lexer.hasNextToken()){
+       _lexer.moveToNextToken();
+       switch(tok = _lexer.getToken()) {
+            case ADD: cout << "ADD " << endl; break;
+            case SUB: cout << "SUB " << endl; break;
+            case MUL: cout << "MUL " << endl; break;
+            case DIV: cout << "DIV " << endl; break;
+            case NUM: cout << "NUM(" << _lexer.getNumberValue() << ") " << endl; break;
+            case VAR: cout << "VAR(" << _lexer.getStringValue() << ") " << endl; break;
+            case L_PAR: cout << "L_PAR " << endl; break;
+            case R_PAR: cout << "R_PAR " << endl; break;
+        }
+    }
 /*
     getline(cin, calc);
     cout << "lexing \"" << calc << "\":" << endl;
