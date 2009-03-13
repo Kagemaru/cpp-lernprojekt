@@ -13,15 +13,19 @@ class Lexer{
     private:
         string  calc;
         string  stringValue;
+        string  oldStringValue;
         int     pos;
         int     numberValue;
+        int     oldNumberValue;
         Token   tok;
         
     public:
                 Lexer(string str)
                     :pos(0), calc(str){}
         string  getStringValue()    { return stringValue;       }
+        string  getOldStringValue() { return oldStringValue;    }
         int     getNumberValue()    { return numberValue;       }
+        int     getOldNumberValue() { return oldNumberValue;    }
         bool    hasNextToken()      { return (pos<calc.size()); }
         Token   getToken()          { return tok;               }
         void    moveToNextToken()   {
@@ -39,6 +43,7 @@ class Lexer{
                 default:
                     if (isdigit(ch)) {
                         int i = pos - 1;
+                        oldNumberValue = numberValue;
                         numberValue = 0;
                         while ((i<calc.size()) && (isdigit(calc[i]))){
                             numberValue = ((numberValue * 10) + calc[i++] - '0');
@@ -47,6 +52,7 @@ class Lexer{
                         tok = NUM;
                     } else if (isalpha(ch)) {
                         int i = pos - 1;
+                        oldStringValue = stringValue;
                         stringValue = "";
                         while ((i<calc.size()) && (isalpha(calc[i]))){
                             stringValue += calc[i++];
@@ -101,6 +107,8 @@ class Parser {
     private:
         Lexer _lexer;
         string calc;
+        stack<int> numbers;
+        int num1, num2, total;
         void parseError(const char* func){ cout << "assert in " << func << endl; assert(false); }
         bool accept(Token tok){ 
             if (_lexer.getToken() == tok){
@@ -118,26 +126,16 @@ class Parser {
                   | VAR expr2
                   | L_PAR expr PAR_R
             */
-            cout << "expr: entering expr()" << endl;
             if (accept(NUM)) {
-                cout << "expr: accepted NUM" << endl;
+                numbers.push(_lexer.getNumberValue());
                 if (!expr2()) { parseError(__FUNCTION__); }
-                cout << "expr: accepted expr2()" << endl;
-                cout << "returning from expr @ pos 1" << endl;
                 return true;
             } else if (accept(VAR)) {
-                cout << "expr: accepted VAR" << endl;
                 if (!expr2()) { parseError(__FUNCTION__); }
-                cout << "expr: accepted expr2()" << endl;
-                cout << "returning from expr @ pos 2" << endl;
                 return true;
             } else if (accept(L_PAR)) {
-                cout << "expr: accepted L_PAR" << endl;
                 if (!expr()) { parseError(__FUNCTION__); }
-                cout << "expr: accepted expr()" << endl;
                 expect(R_PAR);
-                cout << "expr: accepted R_PAR" << endl;
-                cout << "returning from expr @ pos 3" << endl;
                 return true;
             } else {
                 parseError(__FUNCTION__);
@@ -151,42 +149,51 @@ class Parser {
                   | DIV expr expr2
                   | epsilon
             */
-            cout << "expr2: entering expr2()" << endl;
             if (accept(ADD)) {
-                cout << "expr2: accepted ADD" << endl;
                 if (!expr())  { parseError(__FUNCTION__); }
-                cout << "expr2: accepted expr()" << endl;
                 if (!expr2()) { parseError(__FUNCTION__); }
-                cout << "expr2: accepted expr2()" << endl;
-                cout << "returning from expr2 @ pos 1" << endl;
+                assert(!numbers.empty());
+                assert(numbers.size() >= 2);
+                num2 = numbers.top();
+                numbers.pop();
+                num1 = numbers.top();
+                numbers.pop();
+                numbers.push(num1+num2);
                 return true;
             } else if (accept(SUB)) {
-                cout << "expr2: accepted SUB" << endl;
                 if (!expr())  { parseError(__FUNCTION__); }
-                cout << "expr2: accepted expr()" << endl;
                 if (!expr2()) { parseError(__FUNCTION__); }
-                cout << "expr2: accepted expr2()" << endl;
-                cout << "returning from expr2 @ pos 2" << endl;
+                assert(!numbers.empty());
+                assert(numbers.size() >= 2);
+                num2 = numbers.top();
+                numbers.pop();
+                num1 = numbers.top();
+                numbers.pop();
+                numbers.push(num1-num2);
                 return true;
             } else if (accept(MUL)) {
-                cout << "expr2: accepted MUL" << endl;
                 if (!expr())  { parseError(__FUNCTION__); }
-                cout << "expr2: accepted expr()" << endl;
                 if (!expr2()) { parseError(__FUNCTION__); }
-                cout << "expr2: accepted expr2()" << endl;
-                cout << "returning from expr2 @ pos 3" << endl;
+                assert(!numbers.empty());
+                assert(numbers.size() >= 2);
+                num2 = numbers.top();
+                numbers.pop();
+                num1 = numbers.top();
+                numbers.pop();
+                numbers.push(num1*num2);
                 return true;
             } else if (accept(DIV)) {
-                cout << "expr2: accepted DIV" << endl;
                 if (!expr())  { parseError(__FUNCTION__); }
-                cout << "expr2: accepted expr()" << endl;
                 if (!expr2()) { parseError(__FUNCTION__); }
-                cout << "expr2: accepted expr2()" << endl;
-                cout << "returning from expr2 @ pos 4" << endl;
+                assert(!numbers.empty());
+                assert(numbers.size() >= 2);
+                num2 = numbers.top();
+                numbers.pop();
+                num1 = numbers.top();
+                numbers.pop();
+                numbers.push(num1/num2);
                 return true;
             } else {
-                cout << "expr2: accepted epsilon" << endl;
-                cout << "returning from expr2 @ pos 5" << endl;
                 return true;
             }
         }
@@ -200,7 +207,12 @@ class Parser {
             _lexer.moveToNextToken();
             bool success = expr();
             if ((success) && (!_lexer.hasNextToken())){
-                cout << "give out calculated value" << endl;
+                if (!numbers.empty()){
+                    cout << "Total: " << numbers.top() << endl;
+                } else {
+                    cout << "Empty Stack!" << endl;
+                    assert(false);
+                }
             } else {
                 cout << "string is wrong!" << endl;
             }
